@@ -105,7 +105,11 @@ confidence-threshold = 0.8
 exceptions = [
     # Each entry is the crate and version constraint, and its specific allow
     # list
-    { allow = ["Zlib"], crate = "constmuck" },
+    { allow = ["Zlib"], crate = "constmuck" }, # used for computing CRC32 checksum at compile time
+    # below are dependencies of constmuck
+    { allow = ["Zlib"], crate = "constmuck_internal" },
+    { allow = ["Zlib"], crate = "const_panic" },
+    { allow = ["Zlib"], crate = "typewit" },
 ]
 
 # Some crates don't have (easily) machine readable licensing information,
