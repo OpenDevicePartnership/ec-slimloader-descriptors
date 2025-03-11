@@ -300,6 +300,37 @@ impl AppImageDescriptor {
         app_image_descriptor
     }
 
+    #[allow(clippy::too_many_arguments)]
+    /// Generate a copied to RAM app image descriptor with given parameters
+    pub const fn new_ram_image(
+        slot: u32,
+        app_version: u32,
+        security_version: u32,
+        flags: u32,
+        flash_address: u32,
+        image_size_bytes: u32,
+        ram_address: u32,
+        stored_crc_address: u32,
+    ) -> Self {
+        let mut app_image_descriptor = Self {
+            descriptor_version: DESCRIPTOR_VERSION,
+            app_slot_number: slot,
+            app_version,
+            security_version,
+            flags: flags | APP_IMAGE_FLAG_COPY_TO_EXECUTION_ADDRESS,
+            stored_address: flash_address,
+            image_size_bytes,
+            stored_crc_address,
+            execution_address: ram_address,
+            execution_copy_size_bytes: image_size_bytes,
+            descriptor_crc: 0,
+        };
+
+        app_image_descriptor.descriptor_crc = app_image_descriptor.compute_crc();
+
+        app_image_descriptor
+    }
+
     /// Attempt to interpret address memory contents as an AppImageDescriptor
     pub fn from_address(address: *const u32) -> Result<AppImageDescriptor, ParseError> {
         let unvalidated = unsafe { *(address as *const AppImageDescriptor) };
@@ -344,6 +375,27 @@ impl AppImageDescriptor {
 
 #[cfg(test)]
 mod unit_tests {
+
+    #[test]
+    fn test_ram_descriptor_gen() {
+        use super::*;
+
+        let app_image_descriptor = AppImageDescriptor::new_ram_image(
+            0,
+            0,
+            0,
+            APP_IMAGE_FLAG_NONE | APP_IMAGE_FLAG_SKIP_IMAGE_CRC_CHECK,
+            0,
+            0,
+            0,
+            0,
+        );
+
+        assert_ne!(app_image_descriptor.flags & APP_IMAGE_FLAG_COPY_TO_EXECUTION_ADDRESS, 0);
+        let embedded_crc = app_image_descriptor.descriptor_crc;
+        let computed_crc = app_image_descriptor.compute_crc();
+        assert_eq!(embedded_crc, computed_crc);
+    }
 
     #[test]
     fn bootable_region_descriptors_init() {}
