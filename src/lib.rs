@@ -187,6 +187,16 @@ impl BootableRegionDescriptors {
         )
         .unwrap()
     }
+
+    /// Get descriptor for a specific app slot
+    pub fn get_app_at_slot(&self, app_slot: u32) -> Result<AppImageDescriptor, ParseError> {
+        if app_slot >= self.header.num_app_slots {
+            return Err(ParseError::InvalidAppSlot);
+        }
+
+        // can't fail as BootableRegionDescriptors only constructs if all app descriptors are valid
+        AppImageDescriptor::from_region(self.header.app_descriptor_base_address as *const u32, app_slot)
+    }
 }
 
 impl BootableRegionDescriptorHeader {
