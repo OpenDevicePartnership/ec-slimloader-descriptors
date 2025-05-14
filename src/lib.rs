@@ -20,7 +20,7 @@ use core::mem::size_of;
 use bytemuck::{Pod, Zeroable};
 use constmuck::bytes_of;
 /// re-export for matching software CRC32 checksum
-pub use crc::{Crc, Digest, CRC_32_CKSUM};
+pub use crc::{Crc, Digest, CRC_32_ISO_HDLC};
 
 mod version {
     include!(concat!(env!("OUT_DIR"), "/version.rs"));
@@ -260,7 +260,7 @@ impl BootableRegionDescriptorHeader {
             i += 1;
         }
 
-        Crc::<u32>::new(&CRC_32_CKSUM).checksum(&without_crc)
+        Crc::<u32>::new(&CRC_32_ISO_HDLC).checksum(&without_crc)
     }
 
     /// Check if the header_crc value matches the current computed CRC32 checksum
@@ -374,7 +374,7 @@ impl AppImageDescriptor {
             i += 1;
         }
 
-        Crc::<u32>::new(&CRC_32_CKSUM).checksum(&without_crc)
+        Crc::<u32>::new(&CRC_32_ISO_HDLC).checksum(&without_crc)
     }
 
     /// Check this structure's stored descriptor_crc against computed CRC32 checksum of its current contents
