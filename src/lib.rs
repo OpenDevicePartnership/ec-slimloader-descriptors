@@ -188,6 +188,14 @@ impl BootableRegionDescriptors {
         .unwrap()
     }
 
+    pub fn get_app_descriptor_base_address(&self) -> u32 {
+        self.header.app_descriptor_base_address
+    }
+
+    pub fn get_active_slot_number(&self) -> u32 {
+        self.header.active_app_slot
+    }
+
     /// Get descriptor for a specific app slot
     pub fn get_app_at_slot(&self, app_slot: u32) -> Result<AppImageDescriptor, ParseError> {
         if app_slot >= self.header.num_app_slots {
