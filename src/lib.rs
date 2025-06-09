@@ -153,14 +153,14 @@ pub enum ParseError {
     InvalidSlotCount,
 }
 
-/// Manager struct to make loading and writing botable region header and app image descriptors easier
+/// Manager struct to make loading and writing bootable region header and app image descriptors easier
 pub struct BootableRegionDescriptors {
     _base_address: *const u8,
     header: BootableRegionDescriptorHeader,
 }
 
 impl BootableRegionDescriptors {
-    /// Attempt to load from address the bootable region descriptors, header and app images
+    /// Attempt to load from address the bootable region descriptors header and app images
     pub fn from_address(address: *const u32) -> Result<BootableRegionDescriptors, ParseError> {
         // cache off basic data used later
         let this = Self {
@@ -172,6 +172,52 @@ impl BootableRegionDescriptors {
         for i in 0..this.header.num_app_slots {
             let _app_image_descriptor =
                 AppImageDescriptor::from_region(this.header.app_descriptor_base_address as *const u32, i)?;
+        }
+
+        // only allow construction of bootable region descriptors from memory if all slots are valid
+        Ok(this)
+    }
+
+    /// Attempt to load from the provided buffer the bootable region descriptors header and app images.
+    /// # Safety: This function uses pointer arithmetic so the provided buffer MUST encompass both the BL header and all app image descriptors.
+    pub unsafe fn from_region(
+        buffer: *const u32,
+        original_address: u32,
+    ) -> Result<BootableRegionDescriptors, ParseError> {
+        // cache off basic data used later
+        let this = Self {
+            _base_address: buffer as *const u8,
+            header: BootableRegionDescriptorHeader::from_address(buffer)?,
+        };
+
+        // calculate the app descriptor offset in the buffer based on the difference from the original address
+        let adjusted_app_descriptor_base_address =
+            (buffer as u32) + (this.header.app_descriptor_base_address - original_address);
+        // loop over and validate all app slot descriptors, pass up failures if they exist
+        for i in 0..this.header.num_app_slots {
+            let _app_image_descriptor =
+                AppImageDescriptor::from_region(adjusted_app_descriptor_base_address as *const u32, i)?;
+        }
+
+        // only allow construction of bootable region descriptors from memory if all slots are valid
+        Ok(this)
+    }
+
+    /// Attempt to load the bootable region descriptors from the provided buffers for header and app images.
+    /// This is useful for cases where the header and app descriptors are stored in different memory regions.
+    pub fn from_header_and_app_regions(
+        header_buffer: *const u32,
+        app_descriptors_buffer: *const u32,
+    ) -> Result<BootableRegionDescriptors, ParseError> {
+        // cache off basic data used later
+        let this = Self {
+            _base_address: header_buffer as *const u8,
+            header: BootableRegionDescriptorHeader::from_address(header_buffer)?,
+        };
+
+        // loop over and validate all app slot descriptors, pass up failures if they exist
+        for i in 0..this.header.num_app_slots {
+            let _app_image_descriptor = AppImageDescriptor::from_region(app_descriptors_buffer, i)?;
         }
 
         // only allow construction of bootable region descriptors from memory if all slots are valid
